@@ -1,0 +1,6 @@
+.git
+.idea
+vendor
+composer.lock
+doc
+test/build

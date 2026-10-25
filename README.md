@@ -3,6 +3,24 @@
 *TBP* is a light framework designed to develop small and medium
 websites. Focused in component oriented
 
+## Running tests
+
+Tests run inside Docker, so no local PHP installation is needed. Only Docker is required:
+
+```
+bin/test
+```
+
+The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit and pcov) and runs PHPUnit with
+`test/phpunit.xml`. Any argument is passed to PHPUnit, and `PHP_VERSION` selects the PHP image (8.1 or newer,
+default 8.3):
+
+```
+bin/test --filter testEnvVar
+bin/test --no-coverage
+PHP_VERSION=8.1 bin/test
+```
+
 ## Database interfaces
 
 ### SQLite

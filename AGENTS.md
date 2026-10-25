@@ -53,10 +53,14 @@ coneguts (identificats com C1–C4, A1–A8, M1–M11, B1–B19).
 
 - Codi font a `src/` (namespace `Bitendian\TBP\`), tests a `test/src/` amb PHPUnit.
 - Estil: PSR-12, comentaris i identificadors en anglès, capçalera de llicència a cada fitxer de `src/`.
-- No hi ha PHP instal·lat a la màquina de desenvolupament; per executar codi feu servir Docker, per exemple:
+- No hi ha PHP instal·lat a la màquina de desenvolupament. Els tests s'executen amb Docker mitjançant `bin/test`
+  (accepta arguments de PHPUnit i la variable `PHP_VERSION`, 8.1 o superior). Per executar codi solt:
 
   ```bash
   docker run --rm -v "$PWD":/app -w /app php:8.3-cli php <script.php>
   ```
+
+- Els noms `Dockerfile` i `docker-compose.yml` estan ignorats per git (són per a fitxers locals de cada
+  desenvolupador); la imatge de tests és `docker/test.Dockerfile`.
 
 - `vendor/` i `composer.lock` estan ignorats per git.

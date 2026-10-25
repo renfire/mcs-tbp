@@ -245,12 +245,12 @@ un atacant pot instanciar qualsevol classe carregable. El framework no ho fa, pe
 
 | # | On | Problema |
 |---|---|---|
-| B1 | [`composer.json`](../composer.json) | Exigeix `php >=5.3.2`, però el codi fa servir sintaxi de 5.4+ (`[]`, `Closure::bindTo`) i `require-dev` demana `^7.3`. |
+| B1 | [`composer.json`](../composer.json) | Exigeix `php >=5.3.2`, però el codi fa servir sintaxi de 5.4+ (`[]`, `Closure::bindTo`). *Parcialment resolt:* s'ha tret el `"php": "^7.3"` de `require-dev`, que impedia instal·lar les dependències amb PHP 8. |
 | B2 | [`composer.json`](../composer.json), [`LICENSE`](../LICENSE) | `composer.json` diu MIT; `LICENSE` i els comentaris d'`Autoloader.php` diuen Apache 2.0. |
 | B3 | [`composer.json`](../composer.json) | El namespace dels tests apunta a `tests/src/` (la carpeta és `test/src/`) i és a `autoload` en lloc d'`autoload-dev`. |
 | B4 | [`composer.json`](../composer.json) | Les paraules clau esmenten Postgres i Memcached, que no estan implementats. `minimum-stability` no té efecte en una llibreria. |
-| B5 | [`test/phpunit.xml`](../test/phpunit.xml) | Esquema antic (`blacklist`/`whitelist`, `<log>`), incompatible amb PHPUnit 9.3+. |
-| B6 | [`ConfigTest.php:78-93`](../test/src/Utils/Config/ConfigTest.php#L78) | `testEnvVar` necessita `TEST_ENV_VAR`, `TEST_ENV_VAR2`… definides a l'entorn; no es defineixen enlloc (es podrien posar a `<php><env>` de `phpunit.xml`). No verificat. |
+| B5 | [`test/phpunit.xml`](../test/phpunit.xml) | ~~Esquema antic (`blacklist`/`whitelist`, `<log>`), incompatible amb PHPUnit 9.3+.~~ *Resolt:* migrat a l'esquema de PHPUnit 9.6. |
+| B6 | [`ConfigTest.php:78-93`](../test/src/Utils/Config/ConfigTest.php#L78) | ~~`testEnvVar` necessita `TEST_ENV_VAR` i `TEST_ENV_VAR2` definides a l'entorn i no es defineixen enlloc.~~ *Resolt:* definides a `<php><env>` de `phpunit.xml`; confirmat que el test fallava sense elles. |
 | B7 | [`AbstractAPIRest.php:146`](../src/REST/AbstractAPIRest.php#L146), [`:159`](../src/REST/AbstractAPIRest.php#L159) | `libxml_disable_entity_loader` està obsoleta des de PHP 8.0. Els dos analitzadors XML són idèntics. |
 | B8 | [`SqliteDatabaseConnection.php:126-136`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php#L126) | `convertQuestionMarksIntoIds` no es fa servir. `getEnumValues` no està implementat a MSSQL ni a SQLite. |
 | B9 | [`RedisCacheConnection.php:141-144`](../src/Domain/Connection/Cache/RedisCacheConnection.php#L141) | `setCardinality()` no retorna res. `close()` no desconnecta. `AbstractCacheDomain` no té `open()`/`close()` com el domini de base de dades. |
