@@ -12,6 +12,12 @@
             <directory>./src</directory>
         </testsuite>
     </testsuites>
+    <groups>
+        <!-- tests for documented problems that are not fixed yet (run them with the group option of bin/test) -->
+        <exclude>
+            <group>known-issue</group>
+        </exclude>
+    </groups>
     <php>
         <!-- used by ConfigTest::testEnvVar (TEST_ENV_VAR3 and TEST_ENV_VAR4 must stay undefined) -->
         <env name="TEST_ENV_VAR" value="1"/>

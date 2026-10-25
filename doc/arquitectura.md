@@ -87,7 +87,7 @@ només envia la línia d'estat HTTP. Serialitzar la resposta (`getResponseData()
 
 ## Tests
 
-Hi ha tests per a `Utils\Config` (`test/src/Utils/Config/ConfigTest.php`) i tests d'integració de la connexió
-PostgreSQL contra un servidor PostgreSQL 17 real
-(`test/src/Domain/Connection/Database/PostgresDatabaseConnectionTest.php`), que `bin/test` arrenca amb
-`docker/test.compose.yaml`. La resta del framework no té cobertura.
+Hi ha tests per a `Utils\Config` (`test/src/Utils/Config/ConfigTest.php`) i tests d'integració de les connexions
+PostgreSQL i MySQL contra servidors reals (PostgreSQL 17 i MariaDB 11.8) a `test/src/Domain/Connection/Database/`,
+que `bin/test` arrenca amb `docker/test.compose.yaml`. Els tests del grup `known-issue` comproven problemes
+documentats que encara no estan resolts i s'exclouen per defecte. La resta del framework no té cobertura.

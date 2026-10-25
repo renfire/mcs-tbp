@@ -50,7 +50,7 @@ canvis perquè una persona els revisi.
 TBP és un framework PHP lleuger orientat a components. Es publica a Packagist com a `renfire/tbp`, un fork de
 `bitendian/tbp` que manté el namespace `Bitendian\TBP\` (no s'ha de canviar: és un substitut directe de l'original). Vegeu
 [doc/arquitectura.md](doc/arquitectura.md) per a l'estructura i [doc/troballes.md](doc/troballes.md) per als problemes
-coneguts (identificats com C1–C4, A1–A8, M1–M11, B1–B19).
+coneguts (identificats com C1–C4, A1–A8, M1–M11, B1–B20).
 
 - Requereix PHP 8.5 o superior (`composer.json`). El codi nou pot fer servir qualsevol característica de PHP 8.5 i no
   ha de generar avisos de funcions obsoletes.
@@ -59,8 +59,13 @@ coneguts (identificats com C1–C4, A1–A8, M1–M11, B1–B19).
   docblocks, que PHPUnit 12+ ja no reconeix.
 - Estil: PSR-12, comentaris i identificadors en anglès, capçalera de llicència a cada fitxer de `src/`.
 - No hi ha PHP instal·lat a la màquina de desenvolupament. Els tests s'executen amb Docker mitjançant `bin/test`
-  (accepta arguments de PHPUnit i la variable `PHP_VERSION`, per defecte 8.5). `bin/test` arrenca també un
-  PostgreSQL 17 (`docker/test.compose.yaml`) per als tests d'integració i l'elimina en acabar. Per executar codi solt:
+  (accepta arguments de PHPUnit i la variable `PHP_VERSION`, per defecte 8.5). `bin/test` arrenca també
+  PostgreSQL 17 i MariaDB 11.8 (`docker/test.compose.yaml`) per als tests d'integració i els elimina en acabar.
+- Els tests que comproven un problema documentat a `doc/troballes.md` que encara no està resolt porten
+  `#[Group('known-issue')]` i l'identificador de la troballa al nom; `test/phpunit.xml` els exclou per defecte
+  (`bin/test --group known-issue` els executa). En resoldre el problema, cal treure el grup perquè passin a la suite
+  normal.
+- Per executar codi solt:
 
   ```bash
   docker run --rm -v "$PWD":/app -w /app php:8.5-cli php <script.php>

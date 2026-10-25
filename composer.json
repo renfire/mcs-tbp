@@ -29,6 +29,7 @@
     },
     "suggest": {
         "ext-pdo_pgsql": "PostgreSQL connection implementation",
+        "ext-mysqli": "MySQL connector implementation",
         "predis/predis": "Redis connection implementation"
     },
     "conflict": {

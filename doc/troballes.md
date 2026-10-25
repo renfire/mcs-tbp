@@ -2,7 +2,8 @@
 
 Cada troballa indica el fitxer i la línia, què falla, en quin escenari i com es pot corregir.
 
-- **Confirmada**: reproduïda executant el codi amb PHP 8.5.12 (`php:8.5-cli`), la versió mínima del projecte. Vegeu
+- **Confirmada**: reproduïda executant el codi amb PHP 8.5.12 (`php:8.5-cli`), la versió mínima del projecte, amb
+  l'script de reproducció o, per a MySQL, amb els tests del grup `known-issue` contra MariaDB 11.8. Vegeu
   [Reproducció](#reproducció).
 - **Per lectura**: detectada llegint el codi; no s'ha pogut executar (normalment perquè cal un servidor de base de
   dades o una extensió que la imatge oficial no inclou).
@@ -89,13 +90,16 @@ segon argument dona `Error: Undefined constant "Bitendian\TBP\REST\HTTP_REDIRECT
 
 - **Correcció**: `$status = 303`.
 
-### A4. MySQL fa servir `READ UNCOMMITTED` per a totes les connexions — *per lectura*
+### A4. MySQL fa servir `READ UNCOMMITTED` per a totes les connexions — *confirmada*
 
 [`src/Domain/Connection/Database/MysqlDatabaseConnection.php:77`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php#L77)
 
 Cada `open()` executa `SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED`. Totes les lectures de l'aplicació
 poden veure dades no confirmades d'altres transaccions (lectures brutes), que després poden desfer-se amb un
 rollback.
+
+- **Escenari**: després d'`open()`, `@@SESSION.transaction_isolation` val `READ-UNCOMMITTED` en lloc del
+  `REPEATABLE-READ` per defecte (test `a4SessionKeepsDefaultIsolationLevel`).
 
 - **Correcció**: no canviar el nivell d'aïllament per defecte (InnoDB fa servir `REPEATABLE READ`) o fer-lo
   configurable.
@@ -108,6 +112,10 @@ rollback.
 PHP 8.1, mysqli llança excepcions per defecte: amb PHP 8.5, una connexió fallida surt com a `mysqli_sql_exception`
 (per exemple `Connection refused`), no com la `TBPException` que documenta el mètode. Qui capturi `TBPException` no
 la veurà. El mateix passa amb els errors de `prepare()`/`execute()` de `select()` i `command()`.
+
+- **Escenari** (MariaDB 11.8): una contrasenya incorrecta llança `mysqli_sql_exception: Access denied for user`, i
+  una consulta a una taula inexistent, `mysqli_sql_exception: Table 'tbp.missing_table' doesn't exist` (tests
+  `a5WrongPasswordThrowsTbpExceptionOnOpen` i `a5SqlErrorsAreThrownAsTbpException`).
 
 - **Correcció**: capturar `mysqli_sql_exception` i reenviar-la com a `TBPException`, i treure les comprovacions de
   retorn que ja no poden fallar.
@@ -177,12 +185,15 @@ genera una URL trencada o que apunta a una altra ruta.
 - **Escenari**: la ruta `/items/{id}` amb `id = '1/../../admin?x=1'` genera `/items/1/../../admin?x=1`.
 - **Correcció**: `rawurlencode()` de cada valor.
 
-### M4. MySQL fa servir `utf8` en lloc d'`utf8mb4` — *per lectura*
+### M4. MySQL fa servir `utf8` en lloc d'`utf8mb4` — *confirmada*
 
 [`src/Domain/Connection/Database/MysqlDatabaseConnection.php:76`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php#L76)
 
 `utf8` és `utf8mb3` (màxim 3 bytes per caràcter). Els emojis i altres caràcters fora del pla bàsic no es poden
-desar.
+desar, encara que la taula sigui `utf8mb4`.
+
+- **Escenari** (MariaDB 11.8): inserir `😀` en una columna `utf8mb4` falla amb
+  `mysqli_sql_exception: Incorrect string value: '\xF0\x9F\x98\x80'` (test `m4Utf8mb4RoundTrip`).
 
 - **Correcció**: `set_charset('utf8mb4')`, o fer-ho configurable.
 
@@ -276,10 +287,11 @@ un atacant pot instanciar qualsevol classe carregable. El framework no ho fa, pe
 | B13 | [`SystemMessages.php:98-116`](../src/Utils/SystemMessages.php#L98) | `unserialize` sense `allowed_classes`; si es passa un array que no sigui la sessió, permet injecció d'objectes. El comentari de la classe parla de claus amb microsegons que no existeixen. |
 | B14 | [`Config.php:66-77`](../src/Utils/Config.php#L66), [`:184-188`](../src/Utils/Config.php#L184) | Falta `closedir`. Un fitxer anomenat `0` atura `readdir`. `setConfigFileExtension` recarrega la cau compartida per a totes les instàncies. |
 | B15 | [`MysqlDatabaseConnection.php:237-259`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php#L237) | `autocommit(false)` + `begin_transaction()` és redundant. `commit()`/`rollback()` no comproven el resultat. |
-| B16 | [`MysqlDatabaseConnection.php:139-147`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php#L139) | Els paràmetres han de ser una llista indexada des de 0 i tots es vinculen com a `s`. Els resultats s'indexen per l'autoincrement, de manera que `$rows[0]` no funciona. |
+| B16 | [`MysqlDatabaseConnection.php:139-147`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php#L139) | *Confirmada:* els paràmetres han de ser una llista indexada des de 0 i tots es vinculen com a `s`, de manera que `false` arriba com a `''` i MariaDB el rebutja en una columna `TINYINT(1)` (`Incorrect integer value: ''`, test `b16BooleanParamsAreStored`). Els resultats s'indexen per l'autoincrement, de manera que `$rows[0]` no funciona. |
 | B17 | [`AbstractAPIRest.php:113-121`](../src/REST/AbstractAPIRest.php#L113), [`:401-416`](../src/REST/AbstractAPIRest.php#L401) | Els quatre mètodes són abstractes, així que la comprovació `method_exists` de `processAPI()` és inútil. Fa servir `X-HTTP-Method` en lloc de l'habitual `X-HTTP-Method-Override`. |
 | B18 | [`Templater.php:64-75`](../src/UI/Templater.php#L64) | *Confirmada:* un array associatiu com a context es tracta com una llista de contextos: `new Templater($f, ['name' => 'x'])` amb `Hola @@name@@` dona `Hola`. La comprovació `$this->context !== null` de `replace()` sempre és certa. |
 | B19 | [`Pagination.php:59`](../src/Utils/Pagination.php#L59) | *Confirmada:* `ceil()` retorna `float`; `getTotalPages()` retorna `float(3)` en lloc de `int(3)`. |
+| B20 | [`MysqlDatabaseConnection.php`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php), [`MssqlDatabaseConnection.php`](../src/Domain/Connection/Database/MssqlDatabaseConnection.php), [`SqliteDatabaseConnection.php`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php) | *Confirmada a MySQL:* fer servir la connexió abans d'`open()` dona `Error: Call to a member function prepare() on null` en lloc d'una `TBPException` (test `b20UsingAClosedConnectionThrowsTbpException`). MSSQL i SQLite fan el mateix, per lectura. La connexió PostgreSQL ja ho controla. |
 
 ## Reproducció
 
@@ -292,9 +304,21 @@ docker run --rm -v "$PWD":/app:ro -w /app php:8.5-cli sh -c 'docker-php-ext-inst
 ```
 
 S'instal·la `mysqli` dins del contenidor només per a A5. Les connexions MSSQL (A1, A2, A6) es proven injectant un
-`PDO` de SQLite, perquè la imatge no inclou `pdo_sqlsrv`; les fallades no depenen del controlador. A4, A8, M4, M5,
-M10 i M11 necessiten un servidor MySQL, SQL Server o Redis, o depenen de com l'aplicació faci servir el framework, i
-queden com a *per lectura*.
+`PDO` de SQLite, perquè la imatge no inclou `pdo_sqlsrv`; les fallades no depenen del controlador. A8, M5, M10 i M11
+necessiten un servidor SQL Server o Redis, o depenen de com l'aplicació faci servir el framework, i queden com a
+*per lectura*.
+
+Les troballes de MySQL (A4, A5, A7, M4, B16, B20) també es reprodueixen contra un servidor MariaDB 11.8 real amb els
+tests del grup `known-issue` de
+[`MysqlDatabaseConnectionTest.php`](../test/src/Domain/Connection/Database/MysqlDatabaseConnectionTest.php). Aquests
+tests comproven el comportament correcte, així que fallen mentre el problema no estigui resolt; `test/phpunit.xml`
+els exclou de l'execució per defecte:
+
+```bash
+bin/test --no-coverage --group known-issue
+```
+
+Resultat amb PHP 8.5.12 i MariaDB 11.8 (2026-10-25): els 7 tests fallen (5 errors d'asserció i 2 excepcions).
 
 Sortida amb PHP 8.5.12 (2026-10-25, abreujada):
 

@@ -25,10 +25,17 @@ Tests run inside Docker, so no local PHP installation is needed. Only Docker is 
 bin/test
 ```
 
-The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit 13, pcov and pdo_pgsql), starts a
-PostgreSQL 17 server for the integration tests (`docker/test.compose.yaml`), runs PHPUnit with `test/phpunit.xml`
-and removes the containers afterwards. Without that server (e.g. running the image alone) the integration tests are
-skipped. Any argument is passed to PHPUnit, and `PHP_VERSION` selects the `php` Docker image tag
+The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit 13, pcov, mysqli and pdo_pgsql), starts
+PostgreSQL 17 and MariaDB 11.8 servers for the integration tests (`docker/test.compose.yaml`), runs PHPUnit with
+`test/phpunit.xml` and removes the containers afterwards. Without those servers (e.g. running the image alone) the
+integration tests are skipped.
+
+Tests for known problems that are not fixed yet (see `doc/troballes.md`) are in the `known-issue` group, excluded by
+default. They are expected to fail until the problem is fixed:
+
+```
+bin/test --group known-issue
+``` Any argument is passed to PHPUnit, and `PHP_VERSION` selects the `php` Docker image tag
 (default: 8.5, the minimum supported):
 
 ```

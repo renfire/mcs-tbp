@@ -15,7 +15,7 @@ FROM php:${PHP_VERSION}-cli
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git unzip libpq-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && docker-php-ext-install pdo_pgsql \
+    && docker-php-ext-install mysqli pdo_pgsql \
     && pecl install pcov \
     && docker-php-ext-enable pcov
 

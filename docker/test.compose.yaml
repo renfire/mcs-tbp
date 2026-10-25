@@ -1,4 +1,5 @@
-# Test environment: the PHPUnit image plus the databases used by the integration tests. Run through bin/test.
+# Test environment: the PHPUnit image plus the databases used by the integration tests (PostgreSQL 17 and
+# MariaDB 11.8 for the MySQL connector). Run through bin/test.
 
 name: tbp-test
 
@@ -15,8 +16,14 @@ services:
       TBP_TEST_PGSQL_DATABASE: tbp
       TBP_TEST_PGSQL_USERNAME: tbp
       TBP_TEST_PGSQL_PASSWORD: tbp
+      TBP_TEST_MYSQL_SERVER: mariadb
+      TBP_TEST_MYSQL_DATABASE: tbp
+      TBP_TEST_MYSQL_USERNAME: tbp
+      TBP_TEST_MYSQL_PASSWORD: tbp
     depends_on:
       postgres:
+        condition: service_healthy
+      mariadb:
         condition: service_healthy
 
   postgres:
@@ -32,3 +39,18 @@ services:
       interval: 1s
       timeout: 3s
       retries: 30
+
+  mariadb:
+    image: mariadb:11.8
+    environment:
+      MARIADB_DATABASE: tbp
+      MARIADB_USER: tbp
+      MARIADB_PASSWORD: tbp
+      MARIADB_ROOT_PASSWORD: tbp-root
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 1s
+      timeout: 3s
+      retries: 60

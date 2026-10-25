@@ -136,7 +136,7 @@ class MysqlDatabaseConnection implements DatabaseConnectionInterface
             throw new TBPException($this->connection->error, $this->connection->errno);
         }
 
-        if (count($params) > 0) {
+        if (!empty($params)) {
             $statement_params = array();
             for ($i = 0; $i < count($params); $i++) {
                 $statement_params[$i] = &$params[$i];
@@ -202,7 +202,7 @@ class MysqlDatabaseConnection implements DatabaseConnectionInterface
             throw new TBPException($this->connection->error, $this->connection->errno);
         }
 
-        if (count($params)) {
+        if (!empty($params)) {
             $statement_params = array();
             for ($i = 0; $i < count($params); $i++) {
                 $statement_params[$i] = &$params[$i];
