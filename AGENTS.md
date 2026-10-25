@@ -53,7 +53,9 @@ coneguts (identificats com C1–C4, A1–A8, M1–M11, B1–B19).
 
 - Requereix PHP 8.5 o superior (`composer.json`). El codi nou pot fer servir qualsevol característica de PHP 8.5 i no
   ha de generar avisos de funcions obsoletes.
-- Codi font a `src/` (namespace `Bitendian\TBP\`), tests a `test/src/` amb PHPUnit.
+- Codi font a `src/` (namespace `Bitendian\TBP\`), tests a `test/src/` amb PHPUnit 13 (configuració a
+  `test/phpunit.xml`). Els tests nous han de fer servir atributs (`#[Test]`, `#[DataProvider]`…), no anotacions en
+  docblocks, que PHPUnit 12+ ja no reconeix.
 - Estil: PSR-12, comentaris i identificadors en anglès, capçalera de llicència a cada fitxer de `src/`.
 - No hi ha PHP instal·lat a la màquina de desenvolupament. Els tests s'executen amb Docker mitjançant `bin/test`
   (accepta arguments de PHPUnit i la variable `PHP_VERSION`, per defecte 8.5). Per executar codi solt:

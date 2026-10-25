@@ -15,7 +15,7 @@ Tests run inside Docker, so no local PHP installation is needed. Only Docker is 
 bin/test
 ```
 
-The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit and pcov) and runs PHPUnit with
+The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit 13 and pcov) and runs PHPUnit with
 `test/phpunit.xml`. Any argument is passed to PHPUnit, and `PHP_VERSION` selects the `php` Docker image tag
 (default: 8.5, the minimum supported):
 
