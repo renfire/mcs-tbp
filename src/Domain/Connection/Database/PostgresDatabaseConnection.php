@@ -1,0 +1,304 @@
+<?php
+
+/*
+ * This file is part of the TBP package.
+ *
+ * (c) Bitendian <info@bitendian.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Bitendian\TBP\Domain\Connection\Database;
+
+use Bitendian\TBP\Domain\Connection\Interfaces\DatabaseConnectionInterface;
+use Bitendian\TBP\TBPException;
+use PDO;
+use PDOException;
+use PDOStatement;
+use stdClass;
+
+/**
+ * Class with implementation of DatabaseConnectionInterface for PostgreSQL (developed and tested against 17).
+ *
+ * Uses pdo_pgsql and server-side prepared statements with '?' placeholders, like the other connections. Named
+ * placeholders (':name') are accepted too when params is an associative array. Params are bound with the PDO type
+ * that matches their PHP type (null, bool, int, string).
+ *
+ * Select returns rows as a list of associative arrays. PostgreSQL has no autoincrement: to get the id of an inserted
+ * row prefer 'INSERT ... RETURNING id' with select(), or lastInsertId($table, $field) for serial/identity columns.
+ *
+ * Config properties:
+ *
+ * - server           host name or socket directory (default 'localhost')
+ * - port             (default 5432)
+ * - database         database name
+ * - username
+ * - password
+ * - schema           optional, sets search_path
+ * - sslmode          optional: disable, allow, prefer, require, verify-ca, verify-full
+ * - connect_timeout  optional, in seconds
+ * - application_name optional, shown in pg_stat_activity
+ *
+ * Every error is thrown as TBPException, with the original PDOException as previous.
+ */
+class PostgresDatabaseConnection implements DatabaseConnectionInterface
+{
+    /**
+     * @var stdClass
+     */
+    private $config;
+
+    /**
+     * @var PDO|null
+     */
+    private $connection = null;
+
+    /**
+     * PostgresDatabaseConnection constructor.
+     * @param stdClass $config
+     */
+    public function __construct($config)
+    {
+        $this->config = $config;
+    }
+
+    /**
+     * @return string
+     */
+    private function createDsnFromConfig()
+    {
+        $dsn = array(
+            'host' => isset($this->config->server) ? $this->config->server : 'localhost',
+            'port' => isset($this->config->port) ? $this->config->port : 5432,
+            'dbname' => $this->config->database,
+        );
+
+        foreach (array('sslmode', 'connect_timeout', 'application_name') as $option) {
+            if (isset($this->config->$option)) {
+                $dsn[$option] = $this->config->$option;
+            }
+        }
+
+        $dsn['options'] = '--client_encoding=UTF8';
+
+        // libpq conninfo syntax: values are single-quoted, with backslash and quote escaped
+        $parts = array();
+        foreach ($dsn as $key => $value) {
+            $parts[] = $key . "='" . addcslashes((string)$value, "'\\") . "'";
+        }
+        return 'pgsql:' . implode(';', $parts);
+    }
+
+    /**
+     * opens the connection
+     * @throws TBPException
+     */
+    public function open()
+    {
+        try {
+            $this->connection = new PDO(
+                $this->createDsnFromConfig(),
+                isset($this->config->username) ? $this->config->username : null,
+                isset($this->config->password) ? $this->config->password : null,
+                array(
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                )
+            );
+
+            if (isset($this->config->schema)) {
+                $this->connection->exec('SET search_path TO ' . $this->quoteIdentifier($this->config->schema));
+            }
+        } catch (PDOException $e) {
+            $this->connection = null;
+            throw self::wrap($e);
+        }
+    }
+
+    /**
+     * closes the connection
+     */
+    public function close()
+    {
+        $this->connection = null;
+    }
+
+    /**
+     * returns select result
+     * @param string $sql
+     * @param array $params
+     * @return array
+     * @throws TBPException
+     */
+    public function select($sql, $params = array())
+    {
+        try {
+            $statement = $this->execute($sql, $params);
+            $result = $statement->fetchAll();
+            $statement->closeCursor();
+            return $result;
+        } catch (PDOException $e) {
+            throw self::wrap($e);
+        }
+    }
+
+    /**
+     * returns command result
+     * @param string $sql
+     * @param array $params
+     * @return boolean
+     * @throws TBPException
+     */
+    public function command($sql, $params = array())
+    {
+        try {
+            $this->execute($sql, $params)->closeCursor();
+            return true;
+        } catch (PDOException $e) {
+            throw self::wrap($e);
+        }
+    }
+
+    /**
+     * Returns the last value generated by a sequence in this session. With table and field, returns the current
+     * value of the sequence owned by that serial/identity column; without them, the last value of any sequence.
+     * @param string|null $table
+     * @param string|null $field
+     * @return integer
+     * @throws TBPException
+     */
+    public function lastInsertId($table = null, $field = null)
+    {
+        if (isset($table) && isset($field)) {
+            $result = $this->select('SELECT currval(pg_get_serial_sequence(?, ?)) AS id', array($table, $field));
+        } else {
+            $result = $this->select('SELECT lastval() AS id');
+        }
+
+        return (int)$result[0]['id'];
+    }
+
+    /**
+     * returns all labels of the enum type of a column, in declaration order
+     * @param string $table
+     * @param string $field
+     * @return array
+     * @throws TBPException
+     */
+    public function getEnumValues($table, $field)
+    {
+        $sql = '
+            SELECT e.enumlabel
+            FROM pg_attribute a
+                JOIN pg_enum e ON e.enumtypid = a.atttypid
+            WHERE a.attrelid = ?::regclass
+                AND a.attname = ?
+                AND NOT a.attisdropped
+            ORDER BY e.enumsortorder';
+
+        return array_column($this->select($sql, array($table, $field)), 'enumlabel');
+    }
+
+    /**
+     * begin a transaction
+     * @throws TBPException
+     */
+    public function begin()
+    {
+        try {
+            $this->getConnection()->beginTransaction();
+        } catch (PDOException $e) {
+            throw self::wrap($e);
+        }
+    }
+
+    /**
+     * commits a transaction
+     * @throws TBPException
+     */
+    public function commit()
+    {
+        try {
+            $this->getConnection()->commit();
+        } catch (PDOException $e) {
+            throw self::wrap($e);
+        }
+    }
+
+    /**
+     * rollbacks a transaction
+     * @throws TBPException
+     */
+    public function rollback()
+    {
+        try {
+            $this->getConnection()->rollBack();
+        } catch (PDOException $e) {
+            throw self::wrap($e);
+        }
+    }
+
+    /**
+     * @param string $sql
+     * @param array $params
+     * @return PDOStatement
+     */
+    private function execute($sql, $params)
+    {
+        $statement = $this->getConnection()->prepare($sql);
+
+        foreach ($params as $key => $value) {
+            $statement->bindValue(is_int($key) ? $key + 1 : $key, $value, self::getParamType($value));
+        }
+
+        $statement->execute();
+        return $statement;
+    }
+
+    /**
+     * @return PDO
+     * @throws TBPException
+     */
+    private function getConnection()
+    {
+        if ($this->connection === null) {
+            throw new TBPException('connection is not open', -1);
+        }
+        return $this->connection;
+    }
+
+    /**
+     * @param mixed $value
+     * @return int
+     */
+    private static function getParamType($value)
+    {
+        return match (true) {
+            $value === null => PDO::PARAM_NULL,
+            is_bool($value) => PDO::PARAM_BOOL,
+            is_int($value) => PDO::PARAM_INT,
+            default => PDO::PARAM_STR,
+        };
+    }
+
+    /**
+     * @param string $identifier
+     * @return string
+     */
+    private function quoteIdentifier($identifier)
+    {
+        return '"' . str_replace('"', '""', $identifier) . '"';
+    }
+
+    /**
+     * PDOException codes are SQLSTATE strings (e.g. '42P01'), so the code is kept in the message.
+     * @param PDOException $e
+     * @return TBPException
+     */
+    private static function wrap(PDOException $e)
+    {
+        return new TBPException($e->getMessage(), 0, $e);
+    }
+}

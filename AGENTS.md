@@ -59,10 +59,11 @@ coneguts (identificats com C1–C4, A1–A8, M1–M11, B1–B19).
   docblocks, que PHPUnit 12+ ja no reconeix.
 - Estil: PSR-12, comentaris i identificadors en anglès, capçalera de llicència a cada fitxer de `src/`.
 - No hi ha PHP instal·lat a la màquina de desenvolupament. Els tests s'executen amb Docker mitjançant `bin/test`
-  (accepta arguments de PHPUnit i la variable `PHP_VERSION`, per defecte 8.5). Per executar codi solt:
+  (accepta arguments de PHPUnit i la variable `PHP_VERSION`, per defecte 8.5). `bin/test` arrenca també un
+  PostgreSQL 17 (`docker/test.compose.yaml`) per als tests d'integració i l'elimina en acabar. Per executar codi solt:
 
   ```bash
-  docker run --rm -v "$PWD":/app -w /app php:8.3-cli php <script.php>
+  docker run --rm -v "$PWD":/app -w /app php:8.5-cli php <script.php>
   ```
 
 - Els noms `Dockerfile` i `docker-compose.yml` estan ignorats per git (són per a fitxers locals de cada

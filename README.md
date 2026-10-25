@@ -25,8 +25,10 @@ Tests run inside Docker, so no local PHP installation is needed. Only Docker is 
 bin/test
 ```
 
-The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit 13 and pcov) and runs PHPUnit with
-`test/phpunit.xml`. Any argument is passed to PHPUnit, and `PHP_VERSION` selects the `php` Docker image tag
+The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit 13, pcov and pdo_pgsql), starts a
+PostgreSQL 17 server for the integration tests (`docker/test.compose.yaml`), runs PHPUnit with `test/phpunit.xml`
+and removes the containers afterwards. Without that server (e.g. running the image alone) the integration tests are
+skipped. Any argument is passed to PHPUnit, and `PHP_VERSION` selects the `php` Docker image tag
 (default: 8.5, the minimum supported):
 
 ```
@@ -135,3 +137,78 @@ try {
     echo "ERROR: " . $e->getMessage() . "\n";
 }
 ```
+
+### PostgreSQL
+Connector to PostgreSQL (developed and tested against PostgreSQL 17). Works with server-side prepared statements
+(mandatory), using `?` placeholders like the other connectors, or `:name` placeholders with an associative params
+array. Params are bound with their PHP type (`null`, `bool`, `int`, `string`). Support for transactions. Every error
+is thrown as `TBPException`.
+
+#### Installation
+PHP extension ```ext-pdo_pgsql``` required. Check ```phpinfo()```.
+
+Add to your ```composer.json```, at ```require``` section:
+```
+"ext-pdo_pgsql": "*"
+```
+
+#### Configuration
+Create a config file, like ```config/my-postgres.config```
+```
+# TBP/PostgreSQL config file.
+
+# Host name or socket directory (default: localhost) and port (default: 5432)
+server=localhost
+port=5432
+
+database=my_database
+username=my_user
+# Values starting with '$' are read from an environment variable
+password=$PGPASSWORD
+
+# Optional: schema used as search_path
+# schema=my_schema
+
+# Optional: disable, allow, prefer, require, verify-ca, verify-full
+# sslmode=require
+
+# Optional: connection timeout in seconds, and name shown in pg_stat_activity
+# connect_timeout=5
+# application_name=my_app
+```
+
+#### Implementation
+
+Create a *Domain* extending ```AbstractPostgresDomain``` and pass your config. PostgreSQL has no autoincrement:
+use ```INSERT ... RETURNING``` to get generated ids, or ```insertWithAutoincrement``` for identity/serial columns.
+```php
+class MyDomain extends AbstractPostgresDomain
+{
+    public function __construct()
+    {
+        $configReader = new Config(__CONFIG_PATH__);
+        parent::__construct($configReader->getConfig('my-postgres'));
+        $this->open();
+    }
+
+    public function addRegister($a, $b)
+    {
+        $sql = 'INSERT INTO my_table (a, b) VALUES (?, ?) RETURNING id';
+        return self::getSingle($this->connection->select($sql, array($a, $b)))->id;
+    }
+
+    public function getActiveRegisters($since)
+    {
+        $sql = 'SELECT * FROM my_table WHERE active = ? AND created_at >= ?';
+        return self::getAll($this->connection->select($sql, array(true, $since)));
+    }
+
+    public function getMoods()
+    {
+        return $this->connection->getEnumValues('my_table', 'mood');  // labels of an enum column, in order
+    }
+}
+```
+
+Usage and transactions work as in the SQLite example. Rows are returned as a list (not indexed by primary key, unlike
+the MySQL connector).

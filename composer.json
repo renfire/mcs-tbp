@@ -2,7 +2,7 @@
     "name": "renfire/tbp",
     "type": "library",
     "description": "Light component-oriented PHP framework for small and medium websites",
-    "keywords": ["tbp", "framework", "component", "widget", "template", "mysql", "sqlserver", "sqlite", "redis"],
+    "keywords": ["tbp", "framework", "component", "widget", "template", "mysql", "postgresql", "sqlserver", "sqlite", "redis"],
     "homepage": "https://github.com/renfire/mcs-tbp",
     "license": "Apache-2.0",
     "authors": [
@@ -28,6 +28,7 @@
         "phpunit/phpunit": "^13"
     },
     "suggest": {
+        "ext-pdo_pgsql": "PostgreSQL connection implementation",
         "predis/predis": "Redis connection implementation"
     },
     "conflict": {

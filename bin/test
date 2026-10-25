@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 #
-# Runs the TBP test suite inside Docker, so no local PHP installation is needed.
+# Runs the TBP test suite inside Docker, so no local PHP installation is needed. The databases used by the
+# integration tests (PostgreSQL 17) are started before the tests and removed afterwards.
 #
 # Usage:
 #   bin/test                        run the whole suite
@@ -11,19 +12,20 @@ set -eu
 
 cd "$(dirname "$0")/.."
 
-PHP_VERSION="${PHP_VERSION:-8.5}"
-IMAGE="tbp-test:php${PHP_VERSION}"
+export PHP_VERSION="${PHP_VERSION:-8.5}"
+COMPOSE="docker compose --progress quiet -f docker/test.compose.yaml"
 
-docker build --quiet \
-    --build-arg PHP_VERSION="$PHP_VERSION" \
-    -f docker/test.Dockerfile \
-    -t "$IMAGE" \
-    . >/dev/null
+cleanup() {
+    $COMPOSE down --volumes --remove-orphans >/dev/null 2>&1 || true
+}
+trap cleanup EXIT INT TERM
+
+$COMPOSE build --quiet tests
 
 # Allocate a TTY only when there is one (keeps colours locally, works in CI).
-TTY=""
+TTY="-T"
 if [ -t 1 ]; then
-    TTY="-t"
+    TTY=""
 fi
 
-exec docker run --rm $TTY "$IMAGE" "$@"
+$COMPOSE run --rm --quiet-pull $TTY tests "$@"

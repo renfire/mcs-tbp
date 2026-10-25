@@ -1,6 +1,7 @@
 # Image to run the TBP test suite without a local PHP installation.
 #
-# Build and run through bin/test, or manually from the project root:
+# Build and run through bin/test, which also starts the databases the integration tests need
+# (docker/test.compose.yaml). Without them those tests are skipped:
 #
 #   docker build -f docker/test.Dockerfile -t tbp-test .
 #   docker run --rm tbp-test
@@ -12,8 +13,9 @@ FROM composer:2.8 AS composer
 FROM php:${PHP_VERSION}-cli
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git unzip \
+    && apt-get install -y --no-install-recommends git unzip libpq-dev \
     && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-install pdo_pgsql \
     && pecl install pcov \
     && docker-php-ext-enable pcov
 

@@ -41,9 +41,10 @@ RenderInterface ── AbstractRenderizable ── AbstractWidget ── Abstrac
 ## Domain
 
 ```
-AbstractDatabaseDomain ─┬─ AbstractMysqlDomain  → MysqlDatabaseConnection  (mysqli)
-                        ├─ AbstractMssqlDomain  → MssqlDatabaseConnection  (PDO sqlsrv)
-                        └─ AbstractSqliteDomain → SqliteDatabaseConnection (SQLite3)
+AbstractDatabaseDomain ─┬─ AbstractMysqlDomain    → MysqlDatabaseConnection    (mysqli)
+                        ├─ AbstractMssqlDomain    → MssqlDatabaseConnection    (PDO sqlsrv)
+                        ├─ AbstractPostgresDomain → PostgresDatabaseConnection (PDO pgsql, PostgreSQL 17)
+                        └─ AbstractSqliteDomain   → SqliteDatabaseConnection   (SQLite3)
 
 AbstractCacheDomain ──── AbstractRedisDomain    → RedisCacheConnection     (predis)
 ```
@@ -57,6 +58,9 @@ AbstractCacheDomain ──── AbstractRedisDomain    → RedisCacheConnection
   i `insertWithAutoincrement()`.
 - Totes les consultes usen sentències preparades. A MySQL, si la taula té un camp autoincrement, `select()` retorna
   les files indexades per aquest camp.
+- La connexió PostgreSQL és la més recent i evita els problemes coneguts de les altres: vincula cada paràmetre amb
+  el seu tipus PHP, accepta paràmetres amb nom, tradueix tots els errors a `TBPException` (amb la `PDOException`
+  original com a `previous`), i obté identificadors amb `RETURNING` o amb la seqüència de la columna.
 
 ## REST
 
@@ -83,5 +87,7 @@ només envia la línia d'estat HTTP. Serialitzar la resposta (`getResponseData()
 
 ## Tests
 
-Només hi ha tests per a `Utils\Config` (`test/src/Utils/Config/ConfigTest.php`). La resta del framework no té
-cobertura.
+Hi ha tests per a `Utils\Config` (`test/src/Utils/Config/ConfigTest.php`) i tests d'integració de la connexió
+PostgreSQL contra un servidor PostgreSQL 17 real
+(`test/src/Domain/Connection/Database/PostgresDatabaseConnectionTest.php`), que `bin/test` arrenca amb
+`docker/test.compose.yaml`. La resta del framework no té cobertura.
