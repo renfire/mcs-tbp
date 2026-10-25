@@ -40,12 +40,12 @@ class SqliteDatabaseConnection implements DatabaseConnectionInterface
 
     private function createConnectionFromConfig()
     {
-        $filename = isset($this->config->filename) ? $this->config->filename : 'default.db';
+        $filename = $this->config->filename ?? 'default.db';
         $flags = SQLITE3_OPEN_CREATE + SQLITE3_OPEN_READWRITE;
         if (isset($this->config->readOnly) && $this->config->readOnly == 'yes') {
             $flags = SQLITE3_OPEN_READONLY;
         }
-        $encryptionKey = isset($this->config->encryptionKey) ? $this->config->encryptionKey : '';
+        $encryptionKey = $this->config->encryptionKey ?? '';
 
         return new SQLite3($filename, $flags, $encryptionKey);
     }

@@ -69,8 +69,8 @@ class PostgresDatabaseConnection implements DatabaseConnectionInterface
     private function createDsnFromConfig()
     {
         $dsn = array(
-            'host' => isset($this->config->server) ? $this->config->server : 'localhost',
-            'port' => isset($this->config->port) ? $this->config->port : 5432,
+            'host' => $this->config->server ?? 'localhost',
+            'port' => $this->config->port ?? 5432,
             'dbname' => $this->config->database,
         );
 
@@ -99,8 +99,8 @@ class PostgresDatabaseConnection implements DatabaseConnectionInterface
         try {
             $this->connection = new PDO(
                 $this->createDsnFromConfig(),
-                isset($this->config->username) ? $this->config->username : null,
-                isset($this->config->password) ? $this->config->password : null,
+                $this->config->username ?? null,
+                $this->config->password ?? null,
                 array(
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_EMULATE_PREPARES => false,
