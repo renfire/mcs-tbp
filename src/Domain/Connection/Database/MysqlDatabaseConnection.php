@@ -121,7 +121,7 @@ class MysqlDatabaseConnection implements DatabaseConnectionInterface
             throw new TBPException($this->connection->error, $this->connection->errno);
         }
 
-        return str_getcsv($result, ',', "'");
+        return str_getcsv($result, ',', "'", '\\');
     }
 
     /**

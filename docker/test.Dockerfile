@@ -5,7 +5,7 @@
 #   docker build -f docker/test.Dockerfile -t tbp-test .
 #   docker run --rm tbp-test
 
-ARG PHP_VERSION=8.3
+ARG PHP_VERSION=8.5
 
 FROM composer:2.8 AS composer
 

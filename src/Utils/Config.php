@@ -99,7 +99,7 @@ class Config
     {
         $tmp = new stdClass();
         $link = fopen($filename, 'r');
-        while ($data = fgetcsv($link, 0, self::SEPARATOR)) {
+        while ($data = fgetcsv($link, 0, self::SEPARATOR, '"', '\\')) {
             if (count($data) > 1) {
                 $data[0] = trim($data[0]);
                 if (strlen($data[0]) > 0 && $data[0][0] != self::COMMENT) {

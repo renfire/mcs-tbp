@@ -142,11 +142,10 @@ abstract class AbstractAPIRest
             return $result;
         });
 
+        // external entities are not loaded: libxml >= 2.9 (required by PHP 8) disables them by default
         $this->registerMediaTypeParser('application/xml', function ($input) {
-            $backup = libxml_disable_entity_loader(true);
             $backup_errors = libxml_use_internal_errors(true);
             $result = simplexml_load_string($input);
-            libxml_disable_entity_loader($backup);
             libxml_clear_errors();
             libxml_use_internal_errors($backup_errors);
             if ($result === false) {
@@ -156,10 +155,8 @@ abstract class AbstractAPIRest
         });
 
         $this->registerMediaTypeParser('text/xml', function ($input) {
-            $backup = libxml_disable_entity_loader(true);
             $backup_errors = libxml_use_internal_errors(true);
             $result = simplexml_load_string($input);
-            libxml_disable_entity_loader($backup);
             libxml_clear_errors();
             libxml_use_internal_errors($backup_errors);
             if ($result === false) {

@@ -5,13 +5,13 @@
 # Usage:
 #   bin/test                        run the whole suite
 #   bin/test --filter testEnvVar    any extra argument is passed to PHPUnit
-#   PHP_VERSION=8.1 bin/test        run against another PHP version (8.1 or newer)
+#   PHP_VERSION=8.5.10 bin/test     use another php Docker image tag (default: 8.5, the minimum supported)
 
 set -eu
 
 cd "$(dirname "$0")/.."
 
-PHP_VERSION="${PHP_VERSION:-8.3}"
+PHP_VERSION="${PHP_VERSION:-8.5}"
 IMAGE="tbp-test:php${PHP_VERSION}"
 
 docker build --quiet \
