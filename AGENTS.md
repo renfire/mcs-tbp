@@ -47,7 +47,8 @@ canvis perquè una persona els revisi.
 
 ## Context del projecte
 
-TBP (`bitendian/tbp`) és un framework PHP lleuger orientat a components. Vegeu
+TBP és un framework PHP lleuger orientat a components. Es publica a Packagist com a `renfire/tbp`, un fork de
+`bitendian/tbp` que manté el namespace `Bitendian\TBP\` (no s'ha de canviar: és un substitut directe de l'original). Vegeu
 [doc/arquitectura.md](doc/arquitectura.md) per a l'estructura i [doc/troballes.md](doc/troballes.md) per als problemes
 coneguts (identificats com C1–C4, A1–A8, M1–M11, B1–B19).
 

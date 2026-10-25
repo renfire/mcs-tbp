@@ -7,6 +7,16 @@ websites. Focused in component oriented
 
 PHP 8.5 or newer.
 
+## Installation
+
+```
+composer require renfire/tbp
+```
+
+`renfire/tbp` is a fork of [`bitendian/tbp`](https://packagist.org/packages/bitendian/tbp) and keeps its
+`Bitendian\TBP` namespace, so it is a drop-in replacement: change the package name in your `composer.json`. Both
+packages cannot be installed at the same time.
+
 ## Running tests
 
 Tests run inside Docker, so no local PHP installation is needed. Only Docker is required:
