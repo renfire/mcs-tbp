@@ -28,7 +28,7 @@ bin/test
 The script builds the `docker/test.Dockerfile` image (PHP, Composer, PHPUnit 13, pcov, mysqli and pdo_pgsql), starts
 PostgreSQL 17 and MariaDB 11.8 servers for the integration tests (`docker/test.compose.yaml`), runs PHPUnit with
 `test/phpunit.xml` and removes the containers afterwards. Without those servers (e.g. running the image alone) the
-integration tests are skipped.
+PostgreSQL and MySQL integration tests are skipped; the SQLite ones use a temporary file and always run.
 
 Tests for known problems that are not fixed yet (see `doc/troballes.md`) are in the `known-issue` group, excluded by
 default. They are expected to fail until the problem is fixed:

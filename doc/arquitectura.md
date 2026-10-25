@@ -88,6 +88,7 @@ només envia la línia d'estat HTTP. Serialitzar la resposta (`getResponseData()
 ## Tests
 
 Hi ha tests per a `Utils\Config` (`test/src/Utils/Config/ConfigTest.php`) i tests d'integració de les connexions
-PostgreSQL i MySQL contra servidors reals (PostgreSQL 17 i MariaDB 11.8) a `test/src/Domain/Connection/Database/`,
-que `bin/test` arrenca amb `docker/test.compose.yaml`. Els tests del grup `known-issue` comproven problemes
+PostgreSQL, MySQL i SQLite a `test/src/Domain/Connection/Database/`. Els de PostgreSQL i MySQL s'executen contra
+servidors reals (PostgreSQL 17 i MariaDB 11.8) que `bin/test` arrenca amb `docker/test.compose.yaml`; els de SQLite
+fan servir un fitxer temporal i no necessiten cap servidor. Els tests del grup `known-issue` comproven problemes
 documentats que encara no estan resolts i s'exclouen per defecte. La resta del framework no té cobertura.

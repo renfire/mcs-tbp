@@ -16,11 +16,11 @@ Revisió completa del codi font de `bitendian/tbp` (37 fitxers, ~3.500 línies) 
 | Crítica | 4 | XSS i injecció de plantilles al `Templater`, bucle infinit, valors de `Config` que comencen per `$` es perden |
 | Alta | 8 | `close()` de MSSQL sempre falla, `HTTP_REDIRECT_POST` no definida, `READ UNCOMMITTED` per defecte a MySQL |
 | Mitjana | 11 | Rutes interpretades com a regex, `utf8` en lloc d'`utf8mb4`, buffer de sortida obert si `render()` falla |
-| Baixa / deute tècnic | 20 | `composer.json` incoherent, `phpunit.xml` obsolet, codi mort |
+| Baixa / deute tècnic | 21 | `composer.json` incoherent, `phpunit.xml` obsolet, codi mort |
 
-Les troballes marcades com a **confirmades** (25 de 43) s'han reproduït executant el codi amb PHP 8.5.12 (imatge
-oficial `php:8.5-cli`), la versió mínima del projecte, amb l'script [`repro/run.php`](repro/run.php) i, per a MySQL,
-amb els tests del grup `known-issue` contra MariaDB 11.8. La resta
+Les troballes marcades com a **confirmades** (26 de 44) s'han reproduït executant el codi amb PHP 8.5.12 (imatge
+oficial `php:8.5-cli`), la versió mínima del projecte, amb l'script [`repro/run.php`](repro/run.php) i, per a MySQL
+(contra MariaDB 11.8) i SQLite, amb els tests del grup `known-issue`. La resta
 s'han detectat llegint el codi, perquè necessiten un servidor de base de dades o de cau, o depenen de com
 l'aplicació faci servir el framework.
 

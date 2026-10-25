@@ -3,7 +3,7 @@
 Cada troballa indica el fitxer i la línia, què falla, en quin escenari i com es pot corregir.
 
 - **Confirmada**: reproduïda executant el codi amb PHP 8.5.12 (`php:8.5-cli`), la versió mínima del projecte, amb
-  l'script de reproducció o, per a MySQL, amb els tests del grup `known-issue` contra MariaDB 11.8. Vegeu
+  l'script de reproducció o, per a MySQL i SQLite, amb els tests del grup `known-issue`. Vegeu
   [Reproducció](#reproducció).
 - **Per lectura**: detectada llegint el codi; no s'ha pogut executar (normalment perquè cal un servidor de base de
   dades o una extensió que la imatge oficial no inclou).
@@ -282,7 +282,7 @@ un atacant pot instanciar qualsevol classe carregable. El framework no ho fa, pe
 | B8 | [`SqliteDatabaseConnection.php:126-136`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php#L126) | `convertQuestionMarksIntoIds` no es fa servir. `getEnumValues` no està implementat a MSSQL ni a SQLite. |
 | B9 | [`RedisCacheConnection.php:141-144`](../src/Domain/Connection/Cache/RedisCacheConnection.php#L141) | `setCardinality()` no retorna res. `close()` no desconnecta. `AbstractCacheDomain` no té `open()`/`close()` com el domini de base de dades. |
 | B10 | [`Router.php`](../src/Utils/Router.php) | *Confirmada:* si no s'ha cridat `load()`, `getRouteData()` emet `Warning: foreach() argument must be of type array\|object, null given`. Fa servir `_()` (requereix l'extensió gettext) de manera inconsistent. No distingeix entre ruta inexistent i rol no permès. |
-| B11 | [`SqliteDatabaseConnection.php`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php) | *Confirmada:* tots els paràmetres es vinculen com a `SQLITE3_TEXT` (`typeof(?)` amb un enter dona `text`); les comparacions amb columnes numèriques funcionen per l'afinitat de tipus de SQLite, però no les que no tenen afinitat. No s'estableix `busyTimeout` (errors "database is locked" amb concurrència). `encryptionKey` només funciona amb compilacions SEE/SQLCipher. La comprovació d'error d'`open()` no s'executa mai. |
+| B11 | [`SqliteDatabaseConnection.php`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php) | *Confirmada:* tots els paràmetres es vinculen com a `SQLITE3_TEXT`. Les comparacions amb columnes numèriques funcionen per l'afinitat de tipus de SQLite, però no les que no tenen afinitat: `SELECT ? = 1` amb l'enter `1` dona fals. `false` es desa com el text `''` en una columna `INTEGER`. No s'estableix `busyTimeout` (`PRAGMA busy_timeout` val 0: errors "database is locked" amb concurrència). La comprovació d'error d'`open()` no s'executa mai: un camí inexistent llança una `Exception` genèrica, no `TBPException`. `encryptionKey` només funciona amb compilacions SEE/SQLCipher. Tests `b11*` de `SqliteDatabaseConnectionTest`. |
 | B12 | `Utils/*` | Estat global estàtic a `Router`, `HttpHeaders`, `HtmlHeaders`, `SystemMessages` i `Config`: problemes en entorns de llarga durada (Swoole, RoadRunner) i en tests. |
 | B13 | [`SystemMessages.php:98-116`](../src/Utils/SystemMessages.php#L98) | `unserialize` sense `allowed_classes`; si es passa un array que no sigui la sessió, permet injecció d'objectes. El comentari de la classe parla de claus amb microsegons que no existeixen. |
 | B14 | [`Config.php:66-77`](../src/Utils/Config.php#L66), [`:184-188`](../src/Utils/Config.php#L184) | Falta `closedir`. Un fitxer anomenat `0` atura `readdir`. `setConfigFileExtension` recarrega la cau compartida per a totes les instàncies. |
@@ -291,7 +291,8 @@ un atacant pot instanciar qualsevol classe carregable. El framework no ho fa, pe
 | B17 | [`AbstractAPIRest.php:113-121`](../src/REST/AbstractAPIRest.php#L113), [`:401-416`](../src/REST/AbstractAPIRest.php#L401) | Els quatre mètodes són abstractes, així que la comprovació `method_exists` de `processAPI()` és inútil. Fa servir `X-HTTP-Method` en lloc de l'habitual `X-HTTP-Method-Override`. |
 | B18 | [`Templater.php:64-75`](../src/UI/Templater.php#L64) | *Confirmada:* un array associatiu com a context es tracta com una llista de contextos: `new Templater($f, ['name' => 'x'])` amb `Hola @@name@@` dona `Hola`. La comprovació `$this->context !== null` de `replace()` sempre és certa. |
 | B19 | [`Pagination.php:59`](../src/Utils/Pagination.php#L59) | *Confirmada:* `ceil()` retorna `float`; `getTotalPages()` retorna `float(3)` en lloc de `int(3)`. |
-| B20 | [`MysqlDatabaseConnection.php`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php), [`MssqlDatabaseConnection.php`](../src/Domain/Connection/Database/MssqlDatabaseConnection.php), [`SqliteDatabaseConnection.php`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php) | *Confirmada a MySQL:* fer servir la connexió abans d'`open()` dona `Error: Call to a member function prepare() on null` en lloc d'una `TBPException` (test `b20UsingAClosedConnectionThrowsTbpException`). MSSQL i SQLite fan el mateix, per lectura. La connexió PostgreSQL ja ho controla. |
+| B20 | [`MysqlDatabaseConnection.php`](../src/Domain/Connection/Database/MysqlDatabaseConnection.php), [`MssqlDatabaseConnection.php`](../src/Domain/Connection/Database/MssqlDatabaseConnection.php), [`SqliteDatabaseConnection.php`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php) | *Confirmada a MySQL i SQLite:* fer servir la connexió abans d'`open()` dona `Error: Call to a member function prepare() on null` en lloc d'una `TBPException` (tests `b20UsingAClosedConnectionThrowsTbpException`). MSSQL fa el mateix, per lectura. La connexió PostgreSQL ja ho controla. |
+| B21 | [`SqliteDatabaseConnection.php`](../src/Domain/Connection/Database/SqliteDatabaseConnection.php) | *Confirmada:* cada error SQL emet un `Warning` de PHP (`SQLite3::prepare(): Unable to prepare statement: ...`) a més de llançar la `TBPException`. Les aplicacions que converteixen els avisos en excepcions (molts frameworks ho fan) reben una `ErrorException` en lloc de la `TBPException`. Correcció: `$this->connection->enableExceptions(true)` en obrir i convertir les excepcions de SQLite3 en `TBPException`. Test `b21SqlErrorsDoNotEmitPhpWarnings`. |
 
 ## Reproducció
 
@@ -308,17 +309,18 @@ S'instal·la `mysqli` dins del contenidor només per a A5. Les connexions MSSQL 
 necessiten un servidor SQL Server o Redis, o depenen de com l'aplicació faci servir el framework, i queden com a
 *per lectura*.
 
-Les troballes de MySQL (A4, A5, A7, M4, B16, B20) també es reprodueixen contra un servidor MariaDB 11.8 real amb els
-tests del grup `known-issue` de
-[`MysqlDatabaseConnectionTest.php`](../test/src/Domain/Connection/Database/MysqlDatabaseConnectionTest.php). Aquests
-tests comproven el comportament correcte, així que fallen mentre el problema no estigui resolt; `test/phpunit.xml`
-els exclou de l'execució per defecte:
+Les troballes de MySQL (A4, A5, A7, M4, B16, B20) també es reprodueixen contra un servidor MariaDB 11.8 real, i les
+de SQLite (B11, B20, B21) contra SQLite3, amb els tests del grup `known-issue` de
+[`MysqlDatabaseConnectionTest.php`](../test/src/Domain/Connection/Database/MysqlDatabaseConnectionTest.php) i
+[`SqliteDatabaseConnectionTest.php`](../test/src/Domain/Connection/Database/SqliteDatabaseConnectionTest.php).
+Aquests tests comproven el comportament correcte, així que fallen mentre el problema no estigui resolt;
+`test/phpunit.xml` els exclou de l'execució per defecte:
 
 ```bash
 bin/test --no-coverage --group known-issue
 ```
 
-Resultat amb PHP 8.5.12 i MariaDB 11.8 (2026-10-25): els 7 tests fallen (5 errors d'asserció i 2 excepcions).
+Resultat amb PHP 8.5.12 i MariaDB 11.8 (2026-10-25): els 13 tests fallen (7 de MySQL i 6 de SQLite).
 
 Sortida amb PHP 8.5.12 (2026-10-25, abreujada):
 
