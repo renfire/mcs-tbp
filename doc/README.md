@@ -18,8 +18,10 @@ Revisió completa del codi font de `bitendian/tbp` (37 fitxers, ~3.500 línies) 
 | Mitjana | 11 | Rutes interpretades com a regex, `utf8` en lloc d'`utf8mb4`, buffer de sortida obert si `render()` falla |
 | Baixa / deute tècnic | 19 | `composer.json` incoherent, `phpunit.xml` obsolet, codi mort |
 
-Les troballes marcades com a **confirmades** s'han reproduït executant el codi amb la imatge oficial
-`php:8.3-cli`. La resta s'han detectat llegint el codi i comprovant-les contra la documentació de PHP.
+Les troballes marcades com a **confirmades** (21 de 42) s'han reproduït executant el codi amb PHP 8.5.12 (imatge
+oficial `php:8.5-cli`), la versió mínima del projecte, amb l'script [`repro/run.php`](repro/run.php). La resta
+s'han detectat llegint el codi, perquè necessiten un servidor de base de dades o de cau, o depenen de com
+l'aplicació faci servir el framework.
 
 ## Ordre de correcció recomanat
 
